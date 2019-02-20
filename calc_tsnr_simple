@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Illegal number of parameters"
+    echo "Example usage : calc_tsnr fMRI.nii.gz"
+    exit 1
+fi
+
+input=$1
+basename=${input%.*.*}
+Tmean=$basename"_Tmean.nii.gz"
+std=$basename"_std.nii.gz"
+tSNR=$basename"_tSNR.nii.gz"
+
+# calc stats for tSNR
+echo "Calculating tSNR map"
+fslmaths $1 -Tmean $Tmean
+fslmaths $1 -Tstd $std
+fslmaths $Tmean -div $std $tSNR
+
+wb_tsnr=$(fslstats $tSNR -M)
+echo "Whole brain tSNR = $wb_tsnr"
+
+echo "Finished calc_tsnr!"
