@@ -1,0 +1,130 @@
+#!/bin/bash
+# MW 19/01/2016
+
+# Exit on error
+set -e
+
+usage="A script to generate fieldmaps from magnitude and phase data.
+
+$(basename "$0") -m <magnitude-data> -p <phase-data> -d <delta-te> 
+          [-r <B0-map-out-rads>] [-o <B0-map-out-hz>] [-b <bet-of-mag-data>]
+          [-h]
+
+where:
+    -m      magnitude data from B0 acquistion
+    -p      phase data from B0 acquistion
+    -d      delta-TE of B0 acquistion (ms)
+    -r      output B0 fieldmap in rad/second (optional)
+    -o      output B0 fieldmap in Hz (optional)
+    -b      output brain extracted version of magntitude data (optional)
+    -h      display this message"
+
+while getopts "hm:p:r:d:o:b:" opt; do
+    case $opt in
+        m) mag=${OPTARG}
+          ;;
+        p) phase=${OPTARG}
+          ;;
+        d) delta_te=${OPTARG}
+          ;;
+        r) fm_rad_out=${OPTARG}  # optional
+          ;;
+        o) fm_hz_out=${OPTARG}   # optional
+          ;;
+        b) mag_bet_out=${OPTARG} # optional
+          ;;
+        h) echo "$usage"
+          exit
+          ;;
+        :) echo "$usage" >&2
+          exit 1
+          ;;
+        \?) echo "$usage" >&2
+          exit 1
+          ;;
+    esac
+done
+
+if [ -z "$mag" ]; then
+    echo "ERROR, -m option not correctly set."
+    echo "$usage" >&2
+    exit 1
+fi
+
+if [ -z "$phase" ]; then
+    echo "ERROR, -p option not correctly set."
+    echo "$usage" >&2
+    exit 1
+fi
+
+if [ -z "$delta_te" ]; then
+    echo "ERROR, -d option not correctly set."
+    echo "$usage" >&2
+    exit 1
+fi
+
+echo "Magnitude data       : "$mag
+echo "Phase data           : "$phase
+
+# brain mask the mag data
+mag_bet=$(mktemp | tr '.' '_')".nii.gz"
+mag_bet=$mag_bet
+bet $mag $mag_bet
+
+# if we want to keep the mag bet data
+if ! [ -z "$mag_bet_out" ]; then
+    cp $mag_bet $mag_bet_out
+fi
+
+# print the phase data range (au)
+echo -n "Unscaled data range  : "
+fslstats $phase -R
+
+# take sqaure root of square to get magnitude value
+range=$(fslstats $phase -R | awk '{print (($1)^2)^0.5}')
+echo "Assumed data range   : -$range        $range"
+
+# rescale phase data to be between -pi and +pi
+phase_rad=$(mktemp | tr '.' '_')".nii.gz"
+fslmaths $phase -mul 3.14159 -div $range $phase_rad
+
+# print the phase data range
+echo -n "Rescaled data range  : "
+fslstats $phase_rad -R
+
+phase_rad_uw=$(mktemp | tr '.' '_')".nii.gz"
+# unwrap the phase
+prelude -a $mag_bet -p $phase_rad -o $phase_rad_uw
+
+fm_rads=$(mktemp | tr '.' '_')".nii.gz"
+# get into the correct units of rads/sec based on delta TE
+fslmaths $phase_rad_uw -mul 1000 -div $delta_te $fm_rads -odt float
+
+# output some handy numbers
+min_rads=$(fslstats $fm_rads -P 2)
+max_rads=$(fslstats $fm_rads -P 98)
+min_hz=$(echo "$min_rads/6.283185" | bc -l)
+max_hz=$(echo "$max_rads/6.283185" | bc -l)
+range_hz=$(echo "$max_hz - $min_hz" | bc -l)
+
+echo "Approx min   B0 (Hz) :" $min_hz
+echo "Approx max   B0 (Hz) :" $max_hz
+echo "Approx range B0 (Hz) :" $range_hz
+
+# if we want to keep the fm in rads
+if ! [ -z "$fm_rad_out" ]; then
+    cp $fm_rads $fm_rad_out
+fi
+
+# if we want the fieldmap in hz
+if ! [ -z "$fm_hz_out" ]; then
+    fm_hz=$(mktemp | tr '.' '_')".nii.gz"
+    fslmaths $fm_rads -div 6.283185 $fm_hz
+    mv $fm_hz $fm_hz_out
+fi
+
+# clean up any temp files
+rm $mag_bet
+rm $phase_rad
+rm $phase_rad_uw
+rm $fm_rads

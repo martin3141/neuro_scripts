@@ -1,0 +1,64 @@
+#!/bin/bash
+# MW 19/01/16
+
+# Exit on error
+set -e
+
+usage="A script to generate a fieldmap from phase and magnitude data, suitable 
+for use with the FSL FEAT GUI. In addition, a brain extracted version of the 
+magnitude data is also generated (also a requirment for the FEAT GUI). Outputs 
+will be generated in the same directory as the specified magnitude data with 
+the same basename, eg mag_fname_b0_map.nii.gz and mag_fname_brain.nii.gz.
+
+$(basename "$0") -m <magnitude-data> -p <phase-data> -d <delta-te> [-h]
+
+where:
+    -m      magnitude data from B0 acquistion
+    -p      phase data from B0 acquistion
+    -d      delta-TE of B0 acquistion (ms)
+    -h      display this message"
+
+while getopts "hm:p:d:" opt; do
+    case $opt in
+        m) mag=${OPTARG}
+          ;;
+        p) phase=${OPTARG}
+          ;;
+        d) delta_te=${OPTARG}
+          ;;
+        h) echo "$usage"
+          exit
+          ;;
+        :) echo "$usage" >&2
+          exit 1
+          ;;
+        \?) echo "$usage" >&2
+          exit 1
+          ;;
+    esac
+done
+
+
+# Check the options have been set...
+if [ -z "$mag" ]; then
+    echo "ERROR, -m option not correctly set."
+    echo "$usage" >&2
+    exit 1
+fi
+
+if [ -z "$phase" ]; then
+    echo "ERROR, -p option not correctly set."
+    echo "$usage" >&2
+    exit 1
+fi
+
+if [ -z "$delta_te" ]; then
+    echo "ERROR, -d option not correctly set."
+    echo "$usage" >&2
+    exit 1
+fi
+
+mag_bet="${mag%.*.*}_brain.nii.gz"
+fm_rads="${mag%.*.*}_b0_map.nii.gz"
+
+mag_phase2b0 -m $mag -p $phase -d $delta_te -r $fm_rads -b $mag_bet
