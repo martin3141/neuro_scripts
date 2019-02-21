@@ -1,0 +1,162 @@
+#!/bin/bash
+# MW 18/05/16
+
+# Exit on error
+set -e
+
+usage="
+A script to output a png rendering of imaging data in nifti format.
+
+$(basename "$0") -i <data in> -o <png out> [-u <upper value>] [-l <lower value>]
+                 [-v <data volume>] [-w <image width>] [-s <data slice>]
+                 [-g <grayscale mode>] [-p <percentile mode>]
+"
+
+# default to colour output
+gs_mode=false
+perc_mode=false
+
+while getopts "i:o:u:l:v:w:s:hgp" opt; do
+    case $opt in
+        i) data_f=${OPTARG}
+          ;;
+        o) out_f=${OPTARG}
+          ;;
+        u) upper=${OPTARG}
+          ;;
+        l) lower=${OPTARG}
+          ;;
+        v) volume=${OPTARG}
+          ;;
+        w) im_width=${OPTARG}
+          ;;
+        s) slice=${OPTARG}
+          ;;
+        g) gs_mode=true
+          ;;
+        p) perc_mode=true
+          ;;
+        h) echo "$usage"
+          exit
+          ;;
+        :) echo "$usage"
+          exit 1
+          ;;
+        \?) echo "$usage"
+          exit 1
+          ;;
+    esac
+done
+
+if [ -z "$data_f" ]; then
+    echo "ERROR, -i option not correctly set."
+    echo "$usage" >&2
+    exit 1
+fi
+
+if [ -z "$out_f" ]; then
+    echo "ERROR, -o option not correctly set."
+    echo "$usage" >&2
+    exit 1
+fi
+
+if [ -z "$volume" ]; then
+    volume=0
+fi
+
+if [ -z "$im_width" ]; then
+    im_width=800
+fi
+
+temp_f=$(mktemp)
+temp_ascii=$(mktemp)
+
+# extract slice from data
+if [ -z "$slice" ]; then
+    fslroi $data_f $temp_f $volume 1
+else
+    fslroi $data_f $temp_f 0 -1 0 -1 $slice 1 $volume 1
+fi
+
+if [ -z "$upper" ]; then
+    upper=$(fslstats $temp_f -R | awk '{print $2}')
+else
+    if [ "$perc_mode" = true ] ; then
+        upper=$(fslstats $temp_f -P $upper)
+    fi
+fi
+
+if [ -z "$lower" ]; then
+    lower=0
+else
+    if [ "$perc_mode" = true ] ; then
+        lower=$(fslstats $temp_f -P $lower)
+    fi
+fi
+
+fsl2ascii $temp_f $temp_ascii
+temp_ascii=$temp_ascii"00000"
+
+x_dim=$(fslval $temp_f dim1)
+y_dim=$(fslval $temp_f dim2)
+slices=$(fslval $temp_f dim3)
+
+if [ -z "$slice" ]; then
+    width=$( echo "(sqrt($slices)+1)/1" | bc)
+    if (( $slices % $width == 0 )) ; then
+        height=$( echo "$slices/$width" | bc)
+    else
+        height=$( echo "($slices/$width+1)/1" | bc)
+    fi
+else
+    width=1
+    height=1
+fi
+
+data_width=0.84
+
+im_height=$( echo "($height/$width*$data_width*$im_width)" | bc -l)
+
+if [ "$gs_mode" = true ] ; then
+    pal_cmd="set palette gray"
+else
+    pal_cmd="load \"~/neuro_scripts/parula.pal\""
+    pal_cmd="set palette rgb 7,5,15"
+fi
+
+
+gnuplot <<- EOF
+set t png background rgb "black" 
+#set t png crop transparent
+set t png size $im_width,$im_height
+set o "${out_f}"
+$pal_cmd
+set pm3d map
+unset key
+set border lc rgb "white"
+set cbtics textcolor rgb "white"
+set pm3d interpolate 0,0
+set autoscale fix
+set cbrange [$lower:$upper]
+set size ratio -1
+unset title
+unset xlabel
+unset ylabel
+unset border
+unset xtics
+unset ytics
+unset colorbox
+set multiplot layout $height,$width margins 0,$data_width,0,1 spacing 0.005,0.005
+do for [i=0:$(($slices-2))] {
+    splot "${temp_ascii}" index i matrix
+}
+
+set colorbox vertical user origin 0.86,0.1 size 0.03,0.8
+set format cb "%g"
+#set format cb "%.1e"
+splot "${temp_ascii}" index $(($slices-1)) matrix
+EOF
+
+# cleanup
+rm $temp_f".nii.gz"
+rm $temp_ascii

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+data_f=$1
+out_f=$2
+slice=$3
+min=$4
+max=$5
+temp_f=$(mktemp)
+temp_ascii=$(mktemp)
+
+# extract slice from data
+fslroi $data_f $temp_f 0 -1 0 -1 $slice 1 0 -1
+fsl2ascii $temp_f $temp_ascii
+temp_ascii=$temp_ascii"00000"
+
+gnuplot <<- EOF
+#set t png background rgb "black" 
+set t png crop transparent
+set o "${out_f}"
+set tmargin at screen 0.95
+set rmargin at screen 0.95
+set bmargin at screen 0.05
+set lmargin at screen 0.05
+unset border
+unset xtics
+unset ytics
+
+#set palette gray
+#unset colorbox
+
+load "~/neuro_scripts/parula.pal"
+
+set pm3d map
+set border lc rgb "white"
+set cbtics textcolor rgb "white"
+set pm3d interpolate 0,0
+set autoscale fix
+set cbrange [$min:$max]
+set size ratio -1
+splot "${temp_ascii}" matrix
+EOF
+
+# cleanup
+rm $temp_f".nii.gz"
+rm $temp_ascii
