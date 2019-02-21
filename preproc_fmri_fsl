@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# preproc_fmri fmri_data t1_data fm_mag fm_phase te epi_echo_spacing output_dir
+
+fmri_data=$1
+t1_data=$2
+fm_mag=$3
+fm_phase=$4
+epi_te=$5
+epi_es=$6
+output_dir=$7
+
+tr=$(fslval $fmri_data pixdim4 | xargs)
+vols=$(fslval $fmri_data dim4 | xargs)
+
+echo $tr
+echo $vols
+
+# bet T1
+# bet FM mag
+# create B0
+# run feat
