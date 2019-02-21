@@ -32,13 +32,13 @@ set fmri(featwatcher_yn) 1
 set fmri(sscleanup_yn) 0
 
 # Output directory
-set fmri(outputdir) \"\"
+set fmri(outputdir) X
 
 # TR(s)
-set fmri(tr) 1.500000
+set fmri(tr) X
 
 # Total volumes
-set fmri(npts) 200
+set fmri(npts) X
 
 # Delete volumes
 set fmri(ndelete) 0
@@ -81,10 +81,10 @@ set fmri(sh_yn) 0
 set fmri(regunwarp_yn) 1
 
 # EPI dwell time (ms)
-set fmri(dwell) 0.59
+set fmri(dwell) X
 
 # EPI TE (ms)
-set fmri(te) 35
+set fmri(te) X
 
 # % Signal loss threshold
 set fmri(signallossthresh) 10
@@ -262,26 +262,26 @@ set fmri(regstandard_nonlinear_warpres) 10
 set fmri(paradigm_hp) 100
 
 # Total voxels
-set fmri(totalVoxels) 80438400
+set fmri(totalVoxels) X
 
 
 # Number of lower-level copes feeding into higher-level analysis
 set fmri(ncopeinputs) 0
 
 # 4D AVW data or FEAT directory (1)
-set feat_files(1) \"/media/martin/CHBH_DATA_MW/SORTED/20190219_FIRST_CHBH_SCAN_AB/fMRI_TR1.5_MB3_2.5iso_20190219143558_9\"
+set feat_files(1) X
 
 # Add confound EVs text file
 set fmri(confoundevs) 0
 
 # B0 unwarp input image for analysis 1
-set unwarp_files(1) \"/media/martin/CHBH_DATA_MW/SORTED/20190219_FIRST_CHBH_SCAN_AB/fieldmap\"
+set unwarp_files(1) X
 
 # B0 unwarp mag input image for analysis 1
-set unwarp_files_mag(1) \"/media/martin/CHBH_DATA_MW/SORTED/20190219_FIRST_CHBH_SCAN_AB/gre_field_mapping_20190219143558_10_e1_brain\"
+set unwarp_files_mag(1) X
 
 # Subject's structural image for analysis 1
-set highres_files(1) \"/media/martin/CHBH_DATA_MW/SORTED/20190219_FIRST_CHBH_SCAN_AB/T1_bet\"
+set highres_files(1) X
 
 # EV 1 title
 set fmri(evtitle1) \"\"
@@ -390,4 +390,4 @@ set fmri(init_highres) \"\"
 set fmri(init_standard) \"\"
 
 # For full FEAT analysis: overwrite existing .feat output dir?
-set fmri(overwrite_yn) 0"
+set fmri(overwrite_yn) 1"

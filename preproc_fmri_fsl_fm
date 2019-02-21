@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Convenince scipt for peforming a one-off FSL FEAT preprocessing routine.
+# Spatial smoothing is disabled and tSNR calculations are performed on the 
+# filtered_func_data.
+
+if [ $# -ne 7 ]; then
+    echo "Error, illegal number of arguments. Usage:"
+    echo "preproc_fmri FMRI_DATA T1_DATA FM_MAG FM_PHASE EPI_TE EPI_ECHO_SPACING OUTPUT_DIR"
+    exit 2
+fi
+
+fmri=$1
+t1=$2
+fm_mag=$3
+fm_phase=$4
+epi_te=$5
+epi_es=$6
+output_dir=$7
+
+tr=$(fslval $fmri pixdim4 | xargs)
+x_dim=$(fslval $fmri dim1 | xargs)
+y_dim=$(fslval $fmri dim2 | xargs)
+slices=$(fslval $fmri dim3 | xargs)
+vols=$(fslval $fmri dim4 | xargs)
+tot_voxels=$(($x_dim * $y_dim * $slices * $vols))
+
+echo "Repetition time (TR) = "$tr
+echo "Number of volumes    = "$vols
+echo "Number of slices     = "$slices
+echo "Image matrix         = "$x_dim" x "$y_dim
+echo "Total voxels         = "$tot_voxels
+
+echo "Brain extracting T1..."
+t1_brain="${t1%.*.*}_brain.nii.gz"
+bet $t1 $t1_brain -R
+echo $t1_brain" created."
+
+echo "Brain extracting fieldmap magnitude image..."
+fm_mag_brain="${fm_mag%.*.*}_brain.nii.gz"
+bet $fm_mag $fm_mag_brain
+echo $fm_mag_brain" created."
+
+fm_b0="${fm_mag%.*.*}_b0.nii.gz"
+
+echo "Calculating fieldmap..."
+fsl_prepare_fieldmap SIEMENS $fm_phase $fm_mag_brain $fm_b0 2.46
+
+tempfsf=$(mktemp /tmp/XXXXXXXXXX.fsf)
+# echo $tempfsf
+
+# generate feat control file
+output_feat_preproc_fm > $tempfsf
+
+# set output dir
+sed -i '33s:.*:set fmri(outputdir) "'$output_dir'":' $tempfsf
+sed -i '36s:.*:set fmri(tr) '$tr':' $tempfsf
+sed -i '39s:.*:set fmri(npts) '$vols':' $tempfsf
+sed -i '82s:.*:set fmri(dwell) '$epi_es':' $tempfsf
+sed -i '85s:.*:set fmri(te) '$epi_te':' $tempfsf
+sed -i '263s:.*:set fmri(totalVoxels) '$tot_voxels':' $tempfsf
+fmri_full=$(realpath $fmri)
+sed -i '270s:.*:set feat_files(1) "'$fmri_full'":' $tempfsf
+fm_b0_full=$(realpath $fm_b0)
+sed -i '276s:.*:set unwarp_files(1) "'$fm_b0_full'":' $tempfsf
+fm_mag_brain_full=$(realpath $fm_mag_brain)
+sed -i '279s:.*:set unwarp_files_mag(1) "'$fm_mag_brain_full'":' $tempfsf
+t1_brain_full=$(realpath $t1_brain)
+sed -i '282s:.*:set highres_files(1) "'$t1_brain_full'":' $tempfsf
+
+# run feat
+echo "Running FEAT analysis..."
+feat $tempfsf
+
+echo "Calculating tSNR..."
+calc_tsnr_simple $output_dir".feat/filtered_func_data.nii.gz"
+
+echo "All done."
