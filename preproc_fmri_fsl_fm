@@ -37,15 +37,17 @@ t1_brain="${t1%.*.*}_brain.nii.gz"
 bet $t1 $temp_t1_brain -B
 
 echo "Brain extracting fieldmap magnitude image..."
-temp_fm_mag_brain=$(mktemp /tmp/XXXXXXXXXX.nii.gz)
+temp_fm_mag=$(mktemp /tmp/XXXXXXXXXX.nii.gz)
+cp $fm_mag $temp_fm_mag
+temp_fm_mag_brain="${temp_fm_mag%.*.*}_brain.nii.gz"
 fm_mag_brain="${fm_mag%.*.*}_brain.nii.gz"
 bet $fm_mag $temp_fm_mag_brain
 
-temp_fm_b0=$(mktemp /tmp/XXXXXXXXXX.nii.gz)
+temp_fm_b0="${temp_fm_mag%.*.*}_b0.nii.gz"
 fm_b0="${fm_mag%.*.*}_b0.nii.gz"
 
 echo "Calculating fieldmap..."
-fsl_prepare_fieldmap SIEMENS $fm_phase $fm_mag_brain $fm_b0 2.46
+fsl_prepare_fieldmap SIEMENS $fm_phase $temp_fm_mag_brain $temp_fm_b0 2.46
 
 tempfsf=$(mktemp /tmp/XXXXXXXXXX.fsf)
 # echo $tempfsf
@@ -62,11 +64,11 @@ sed -i '85s:.*:set fmri(te) '$epi_te':' $tempfsf
 sed -i '263s:.*:set fmri(totalVoxels) '$tot_voxels':' $tempfsf
 fmri_full=$(realpath $fmri)
 sed -i '270s:.*:set feat_files(1) "'$fmri_full'":' $tempfsf
-fm_b0_full=$(realpath $fm_b0)
+fm_b0_full=$(realpath $temp_fm_b0)
 sed -i '276s:.*:set unwarp_files(1) "'$fm_b0_full'":' $tempfsf
-fm_mag_brain_full=$(realpath $fm_mag_brain)
+fm_mag_brain_full=$(realpath $temp_fm_mag_brain)
 sed -i '279s:.*:set unwarp_files_mag(1) "'$fm_mag_brain_full'":' $tempfsf
-t1_brain_full=$(realpath $t1_brain)
+t1_brain_full=$(realpath $temp_t1_brain)
 sed -i '282s:.*:set highres_files(1) "'$t1_brain_full'":' $tempfsf
 
 # run feat
