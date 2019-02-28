@@ -32,15 +32,16 @@ echo "Image matrix         = "$x_dim" x "$y_dim
 echo "Total voxels         = "$tot_voxels
 
 echo "Brain extracting T1..."
+temp_t1_brain=$(mktemp /tmp/XXXXXXXXXX.nii.gz)
 t1_brain="${t1%.*.*}_brain.nii.gz"
-bet $t1 $t1_brain -B
-echo $t1_brain" created."
+bet $t1 $temp_t1_brain -B
 
 echo "Brain extracting fieldmap magnitude image..."
+temp_fm_mag_brain=$(mktemp /tmp/XXXXXXXXXX.nii.gz)
 fm_mag_brain="${fm_mag%.*.*}_brain.nii.gz"
-bet $fm_mag $fm_mag_brain
-echo $fm_mag_brain" created."
+bet $fm_mag $temp_fm_mag_brain
 
+temp_fm_b0=$(mktemp /tmp/XXXXXXXXXX.nii.gz)
 fm_b0="${fm_mag%.*.*}_b0.nii.gz"
 
 echo "Calculating fieldmap..."
@@ -74,5 +75,10 @@ feat $tempfsf
 
 echo "Calculating tSNR..."
 calc_tsnr_simple $output_dir".feat/filtered_func_data.nii.gz"
+
+echo "Moving temporary files..."
+mv $temp_fm_b0 $output_dir".feat/"$fm_b0
+mv $temp_fm_mag_brain $output_dir".feat/"$fm_mag_brain
+mv $temp_t1_brain $output_dir".feat/"$t1_brain
 
 echo "All done."
