@@ -6,7 +6,7 @@
 
 if [ $# -ne 7 ]; then
     echo "Error, illegal number of arguments. Usage:"
-    echo "preproc_fmri FMRI_DATA T1_DATA FM_MAG FM_PHASE EPI_TE EPI_ECHO_SPACING OUTPUT_DIR"
+    echo "preproc_fmri FMRI_DATA T1_DATA FM_MAG FM_PHASE EPI_TE (~35 ms) EPI_ECHO_SPACING (~0.59 ms) OUTPUT_DIR"
     exit 2
 fi
 
@@ -33,7 +33,7 @@ echo "Total voxels         = "$tot_voxels
 
 echo "Brain extracting T1..."
 t1_brain="${t1%.*.*}_brain.nii.gz"
-bet $t1 $t1_brain -R
+bet $t1 $t1_brain -B
 echo $t1_brain" created."
 
 echo "Brain extracting fieldmap magnitude image..."
