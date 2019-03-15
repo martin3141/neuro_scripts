@@ -11,6 +11,7 @@ basename=${input%.*.*}
 Tmean=$basename"_Tmean.nii.gz"
 std=$basename"_std.nii.gz"
 tSNR=$basename"_tSNR.nii.gz"
+tSNR_TR=$basename"_tSNR_div_sqrt_TR.nii.gz"
 
 # calc stats for tSNR
 echo "Calculating tSNR map"
@@ -20,5 +21,11 @@ fslmaths $Tmean -div $std $tSNR
 
 wb_tsnr=$(fslstats $tSNR -M)
 echo "Whole brain tSNR = $wb_tsnr"
+
+fslmaths $Tmean -div $std $tSNR
+
+tr=$(fslval $input pixdim4 | xargs)
+sqrt_tr=$(echo "sqrt ( $tr )" | bc -l )
+fslmaths $tSNR -div $sqrt_tr $tSNR_TR
 
 echo "Finished calc_tsnr!"
