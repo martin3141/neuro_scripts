@@ -121,7 +121,7 @@ if [ "$gs_mode" = true ] ; then
     pal_cmd="set palette gray"
 else
     pal_cmd="load \"~/neuro_scripts/parula.pal\""
-    pal_cmd="set palette rgb 7,5,15"
+    #pal_cmd="set palette rgb 7,5,15"
 fi
 
 

@@ -67,8 +67,8 @@ output_feat_preproc_fm > $tempfsf
 sed -i '33s:.*:set fmri(outputdir) "'$output_dir'":' $tempfsf
 sed -i '36s:.*:set fmri(tr) '$tr':' $tempfsf
 sed -i '39s:.*:set fmri(npts) '$vols':' $tempfsf
-sed -i '82s:.*:set fmri(dwell) '$epi_es':' $tempfsf
-sed -i '85s:.*:set fmri(te) '$epi_te':' $tempfsf
+sed -i '82s:.*:set fmri(dwell) '$epi_es_ms':' $tempfsf
+sed -i '85s:.*:set fmri(te) '$epi_te_ms':' $tempfsf
 sed -i '109s:.*:set fmri(smooth) '$smooth_fwhm':' $tempfsf
 sed -i '263s:.*:set fmri(totalVoxels) '$tot_voxels':' $tempfsf
 fmri_full=$(realpath $fmri)
