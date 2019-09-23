@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Illegal number of parameters"
+    echo "Example usage : nii2png T1.nii.gz"
+    exit 1
+fi
+
+input=$1
+basename=${input%.*.*}
+
+slicer $1 -u -a $basename".png"
