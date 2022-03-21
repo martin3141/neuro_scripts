@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+	echo "Error, only the path to the T1 NIfTI file should be given as an argument."
+	exit 1
+fi
+
+# deface
+fsl_deface $1 T1_deface
+
+# skull strip
+bet T1_deface T1_brain -B
+
+# segment
+fast T1_brain

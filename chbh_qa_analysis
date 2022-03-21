@@ -2,4 +2,4 @@
 
 args = commandArgs(trailingOnly = TRUE)
 library(fmriqa)
-run_fmriqa(data_file = args[1], spike_detect = TRUE)
+run_fmriqa(data_file = args[1], spike_detect = TRUE, gen_pdf = TRUE)
