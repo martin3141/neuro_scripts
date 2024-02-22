@@ -7,6 +7,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 input=$1
-basename=${input%.*.*}
+basename=${input%.gz}
+basename=${basename%.nii}
 
-slicer $1 -u -a $basename".png"
+slicer $1 -s 2 -u -a $basename".png"
