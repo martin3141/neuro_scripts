@@ -15,7 +15,8 @@ tSNR=$basename"_tSNR.nii.gz"
 tSNR_TR=$basename"_tSNR_div_sqrt_TR.nii.gz"
 
 # correct motion with MCFLIRT
-mcflirt -in $input -out $input_mc
+echo "Correcting motion with MCFLIRT"
+mcflirt -in $input -out $input_mc -plots
 
 # calc stats for tSNR
 echo "Calculating tSNR map"
