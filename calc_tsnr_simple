@@ -2,7 +2,7 @@
 
 if [ "$#" -ne 1 ]; then
     echo "Illegal number of parameters"
-    echo "Example usage : calc_tsnr fMRI.nii.gz"
+    echo "Example usage : calc_tsnr_simple fMRI.nii.gz"
     exit 1
 fi
 
@@ -28,4 +28,4 @@ tr=$(fslval $input pixdim4 | xargs)
 sqrt_tr=$(echo "sqrt ( $tr )" | bc -l )
 fslmaths $tSNR -div $sqrt_tr $tSNR_TR
 
-echo "Finished calc_tsnr!"
+echo "Finished calc_tsnr_simple!"
