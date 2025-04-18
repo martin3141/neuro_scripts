@@ -8,11 +8,11 @@ fi
 
 input=$1
 basename=${input%.*.*}
-input_mc=$basename"_mc.nii.gz"
-Tmean=$basename"_Tmean.nii.gz"
-std=$basename"_std.nii.gz"
-tSNR=$basename"_tSNR.nii.gz"
-tSNR_TR=$basename"_tSNR_div_sqrt_TR.nii.gz"
+input_mc=$basename"_mc"
+Tmean=$basename"_Tmean"
+std=$basename"_std"
+tSNR=$basename"_tSNR"
+tSNR_TR=$basename"_tSNR_div_sqrt_TR"
 
 # correct motion with MCFLIRT
 echo "Correcting motion with MCFLIRT"
