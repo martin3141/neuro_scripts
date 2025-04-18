@@ -1,0 +1,33 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Illegal number of parameters"
+    echo "Example usage : calc_tsnr fMRI.nii.gz"
+    exit 1
+fi
+
+input=$1
+basename=${input%.*.*}
+input_mc=$basename"_mc.nii.gz"
+Tmean=$basename"_Tmean.nii.gz"
+std=$basename"_std.nii.gz"
+tSNR=$basename"_tSNR.nii.gz"
+tSNR_TR=$basename"_tSNR_div_sqrt_TR.nii.gz"
+
+# correct motion with MCFLIRT
+mcflirt -in $input -out $input_mc
+
+# calc stats for tSNR
+echo "Calculating tSNR map"
+fslmaths $input_mc -Tmean $Tmean
+fslmaths $input_mc -Tstd $std
+fslmaths $Tmean -div $std $tSNR
+
+# wb_tsnr=$(fslstats $tSNR -M)
+# echo "Whole brain tSNR = $wb_tsnr"
+
+tr=$(fslval $input pixdim4 | xargs)
+sqrt_tr=$(echo "sqrt ( $tr )" | bc -l )
+fslmaths $tSNR -div $sqrt_tr $tSNR_TR
+
+echo "Finished calc_tsnr!"
