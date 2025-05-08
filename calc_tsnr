@@ -9,26 +9,38 @@ fi
 input=$1
 basename=${input%.*.*}
 input_mc=$basename"_mc"
+input_mc_hp=$basename"_mc_hp"
 Tmean=$basename"_Tmean"
 std=$basename"_std"
 tSNR=$basename"_tSNR"
 tSNR_TR=$basename"_tSNR_div_sqrt_TR"
 
+# figure out the TR
+tr=$(fslval $input pixdim4 | xargs)
+
 # correct motion with MCFLIRT
 echo "Correcting motion with MCFLIRT"
 mcflirt -in $input -out $input_mc -plots
 
+# apply high pass temporal filter, see:
+# https://www.jiscmail.ac.uk/cgi-bin/wa-jisc.exe?A2=FSL;f6fd75a6.1709
+filt_hz=0.01
+filt_vols=$(echo "1/(2*$filt_hz*$tr)" | bc -l)
+echo "Applying high-pass temporal filter"
+echo "Filter cutoff (Hz)     : "$filt_hz
+echo "Filter sigma (volumes) : "$filt_vols
+fslmaths $input_mc -bptf $filt_vols -1 $input_mc_hp
+
 # calc stats for tSNR
 echo "Calculating tSNR map"
 fslmaths $input_mc -Tmean $Tmean
-fslmaths $input_mc -Tstd $std
+fslmaths $input_mc_hp -Tstd $std
 fslmaths $Tmean -div $std $tSNR
 
 # wb_tsnr=$(fslstats $tSNR -M)
 # echo "Whole brain tSNR = $wb_tsnr"
 
-tr=$(fslval $input pixdim4 | xargs)
-sqrt_tr=$(echo "sqrt ( $tr )" | bc -l )
+sqrt_tr=$(echo "sqrt ( $tr )" | bc -l)
 fslmaths $tSNR -div $sqrt_tr $tSNR_TR
 
 echo "Finished calc_tsnr!"
